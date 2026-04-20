@@ -9,6 +9,7 @@ from backend.database import Base, engine
 from backend.main import app
 
 client = TestClient(app)
+MAX_STATUS_POLLS = 40
 
 
 def setup_function() -> None:
@@ -82,12 +83,13 @@ def test_evaluation_status_and_results_flow():
     assert evaluation.status_code == 200
     evaluation_id = evaluation.json()["data"]["id"]
 
-    for _ in range(20):
+    for _ in range(MAX_STATUS_POLLS):
         status = client.get(f"/api/evaluations/{evaluation_id}/status")
         assert status.status_code == 200
         if status.json()["data"]["status"] == "completed":
             break
-        time.sleep(0.2)
+        time.sleep(0.25)
+    assert status.json()["data"]["status"] == "completed", "Evaluation did not complete in time"
 
     results = client.get(f"/api/evaluations/{evaluation_id}/results")
     assert results.status_code == 200

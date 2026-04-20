@@ -1,4 +1,5 @@
 import csv
+from itertools import islice
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
@@ -34,16 +35,12 @@ def build_dataset_preview(path: Path, data_type: str, limit: int = 5) -> dict[st
     if data_type == "tabular" or suffix == ".csv":
         with path.open("r", encoding="utf-8", errors="ignore") as file:
             reader = csv.reader(file)
-            rows = []
-            for idx, row in enumerate(reader):
-                rows.append(row)
-                if idx + 1 >= limit:
-                    break
+            rows = list(islice(reader, limit))
         return {"type": "tabular", "rows": rows}
 
     if data_type == "text" or suffix in {".txt", ".json"}:
         with path.open("r", encoding="utf-8", errors="ignore") as file:
-            lines = [line.strip() for _, line in zip(range(limit), file)]
+            lines = [line.strip() for line in islice(file, limit)]
         return {"type": "text", "lines": lines}
 
     return {

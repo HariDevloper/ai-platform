@@ -1,6 +1,4 @@
-import asyncio
-
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, Query
 from sqlalchemy.orm import Session
 
 from backend.database import get_db
@@ -14,7 +12,11 @@ router = APIRouter(prefix="/api/evaluations", tags=["evaluations"])
 
 
 @router.post("/create")
-async def create_evaluation(payload: EvaluationCreate, db: Session = Depends(get_db)):
+async def create_evaluation(
+    payload: EvaluationCreate,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
     model = db.query(Model).filter(Model.id == payload.model_id).first()
     if not model:
         raise AppException("Model not found", status_code=404)
@@ -34,7 +36,7 @@ async def create_evaluation(payload: EvaluationCreate, db: Session = Depends(get
     db.commit()
     db.refresh(evaluation)
 
-    asyncio.create_task(execute_evaluation(evaluation.id))
+    background_tasks.add_task(execute_evaluation, evaluation.id)
     return success_response(evaluation, "Evaluation created")
 
 

@@ -17,7 +17,7 @@ def _estimate_rows(path: Path, data_type: str) -> int | None:
     if data_type != "tabular" or path.suffix.lower() != ".csv":
         return None
     with path.open("r", encoding="utf-8", errors="ignore") as file:
-        return sum(1 for _ in file) - 1
+        return sum(1 for _ in file)
 
 
 @router.post("/upload")

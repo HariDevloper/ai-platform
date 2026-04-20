@@ -1,4 +1,5 @@
 import time
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
@@ -19,7 +20,15 @@ from backend.utils.response import error_response, success_response
 setup_logging()
 logger = get_logger(__name__)
 
-app = FastAPI(title="AI Platform API", version="1.0.0")
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    init_db()
+    logger.info("Database initialized")
+    yield
+
+
+app = FastAPI(title="AI Platform API", version="1.0.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -29,21 +38,21 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-@app.on_event("startup")
-def startup_event() -> None:
-    init_db()
-    logger.info("Database initialized")
-
-
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     start_time = time.perf_counter()
+    status_code = 500
     try:
         response = await call_next(request)
+        status_code = response.status_code
+    except Exception:
+        duration_ms = (time.perf_counter() - start_time) * 1000
+        logger.exception("%s %s %s %.2fms", request.method, request.url.path, status_code, duration_ms)
+        raise
     finally:
         duration_ms = (time.perf_counter() - start_time) * 1000
-        logger.info("%s %s %.2fms", request.method, request.url.path, duration_ms)
+        if status_code != 500:
+            logger.info("%s %s %s %.2fms", request.method, request.url.path, status_code, duration_ms)
     return response
 
 
