@@ -10,6 +10,20 @@ import type {
   UploadModelFormData,
 } from '../types/api'
 
+interface ApiEnvelope<T> {
+  success: boolean
+  data: T
+  message: string
+  error?: string
+}
+
+const unwrap = <T>(payload: ApiEnvelope<T>): T => {
+  if (!payload.success) {
+    throw new Error(payload.error || payload.message || 'Request failed')
+  }
+  return payload.data
+}
+
 export const uploadModel = async (
   payload: UploadModelFormData,
   onUploadProgress?: (progress: number) => void,
@@ -20,7 +34,7 @@ export const uploadModel = async (
   formData.append('model_type', payload.model_type)
   formData.append('file', payload.file)
 
-  const { data } = await api.post<ModelItem>('/models/upload', formData, {
+  const { data } = await api.post<ApiEnvelope<ModelItem>>('/api/models/upload', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
     onUploadProgress: (event: AxiosProgressEvent) => {
       if (!event.total) return
@@ -28,7 +42,7 @@ export const uploadModel = async (
     },
   })
 
-  return data
+  return unwrap(data)
 }
 
 export const uploadDataset = async (
@@ -40,7 +54,7 @@ export const uploadDataset = async (
   formData.append('dataset_type', payload.dataset_type)
   formData.append('file', payload.file)
 
-  const { data } = await api.post<DatasetItem>('/datasets/upload', formData, {
+  const { data } = await api.post<ApiEnvelope<DatasetItem>>('/api/datasets/upload', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
     onUploadProgress: (event: AxiosProgressEvent) => {
       if (!event.total) return
@@ -48,20 +62,20 @@ export const uploadDataset = async (
     },
   })
 
-  return data
+  return unwrap(data)
 }
 
 export const createEvaluation = async (payload: EvaluateRequest) => {
-  const { data } = await api.post<EvaluationItem>('/evaluate', payload)
-  return data
+  const { data } = await api.post<ApiEnvelope<EvaluationItem>>('/api/evaluations/create', payload)
+  return unwrap(data)
 }
 
 export const fetchEvaluations = async () => {
-  const { data } = await api.get<EvaluationItem[]>('/evaluations')
-  return data
+  const { data } = await api.get<ApiEnvelope<EvaluationItem[]>>('/api/evaluations')
+  return unwrap(data)
 }
 
 export const fetchResultById = async (id: number) => {
-  const { data } = await api.get<EvaluationResult>(`/results/${id}`)
-  return data
+  const { data } = await api.get<ApiEnvelope<EvaluationResult>>(`/api/evaluations/${id}/results`)
+  return unwrap(data)
 }
