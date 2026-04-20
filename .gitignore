@@ -1,0 +1,4 @@
+__pycache__/
+*.py[cod]
+*.db
+backend/app/platform.log
