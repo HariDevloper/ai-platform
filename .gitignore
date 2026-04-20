@@ -1,0 +1,16 @@
+# Python cache/artifacts
+__pycache__/
+*.py[cod]
+
+# Backend runtime artifacts
+backend/storage/*.db
+backend/uploads/models/*
+backend/uploads/datasets/*
+!backend/uploads/.gitkeep
+!backend/uploads/models/.gitkeep
+!backend/uploads/datasets/.gitkeep
+!backend/storage/.gitkeep
+
+# Node artifacts
+node_modules/
+frontend/dist/
