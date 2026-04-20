@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import shutil
 from pathlib import Path
+from uuid import uuid4
 
 from fastapi import HTTPException, UploadFile, status
 
@@ -23,9 +24,10 @@ class FileHandler:
                 detail=f"Unsupported file extension '{suffix}'. Allowed: {sorted(allowed_extensions)}",
             )
 
-        destination = Path(destination_dir)
+        safe_name = Path(upload.filename or "uploaded_file").name
+        destination = Path(destination_dir).resolve()
         destination.mkdir(parents=True, exist_ok=True)
-        target = destination / (upload.filename or "uploaded_file")
+        target = destination / f"{uuid4().hex}_{safe_name}"
 
         with target.open("wb") as buffer:
             shutil.copyfileobj(upload.file, buffer)

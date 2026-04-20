@@ -73,6 +73,14 @@ class EvaluationService:
             return evaluate_vision(y_true, predictions)
         raise ValueError(f"Unsupported model type: {model_type}")
 
+    @staticmethod
+    def _calculate_trust_score(fairness_gap: float, degradation: float) -> float:
+        """
+        Compute trust score on [0, 1] where lower fairness gaps and lower
+        robustness degradation increase overall trust.
+        """
+        return float(max(0.0, 1.0 - fairness_gap - degradation))
+
     def run_evaluation(self, evaluation_id: int) -> None:
         evaluation = self.get(evaluation_id)
         if evaluation is None:
@@ -104,7 +112,10 @@ class EvaluationService:
             baseline = float(np.mean(predictions)) if predictions else 0.0
             robustness = evaluate_robustness(features, adapter.predict, baseline)
 
-            trust_score = float(max(0.0, 1.0 - fairness.get("demographic_parity_gap", 0.0) - robustness.get("degradation", 0.0)))
+            trust_score = self._calculate_trust_score(
+                fairness.get("demographic_parity_gap", 0.0),
+                robustness.get("degradation", 0.0),
+            )
 
             evaluation.metrics = {
                 "performance": metrics,

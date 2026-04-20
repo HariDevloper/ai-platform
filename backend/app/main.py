@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 
 from app.api.routes_datasets import router as datasets_router
@@ -9,13 +11,14 @@ from app.core.config import settings
 from app.core.database import Base, engine
 
 
-app = FastAPI(title=settings.app_name, version="1.0.0")
-
-
-@app.on_event("startup")
-def startup() -> None:
+@asynccontextmanager
+async def lifespan(_: FastAPI):
     settings.ensure_storage_dirs()
     Base.metadata.create_all(bind=engine)
+    yield
+
+
+app = FastAPI(title=settings.app_name, version="1.0.0", lifespan=lifespan)
 
 
 @app.get("/health")
